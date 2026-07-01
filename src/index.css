@@ -238,3 +238,66 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: rgba(107, 114, 128, 0.7);
 }
+
+/* ===== Premium Enhancements ===== */
+
+/* Button hover effect */
+.btn-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-hover:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(145, 94, 255, 0.4);
+}
+
+.btn-hover:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Form input focus ring */
+.input-focus-ring {
+  transition: all 0.3s ease;
+}
+
+.input-focus-ring:focus {
+  box-shadow: 0 0 0 2px rgba(145, 94, 255, 0.4);
+  border: 1px solid rgba(145, 94, 255, 0.6) !important;
+}
+
+/* Project card hover */
+.project-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.project-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(145, 94, 255, 0.15);
+}
+
+/* Status message animation */
+.status-message-animate {
+  animation: statusFadeIn 0.4s ease-out;
+}
+
+@keyframes statusFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Smooth link transitions */
+a {
+  transition: color 0.3s ease;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(145, 94, 255, 0.3);
+  color: #ffffff;
+}

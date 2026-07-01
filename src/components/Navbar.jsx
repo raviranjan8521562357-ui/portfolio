@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { styles } from "../styles";
 import { navLinks } from "../constants";
-import { logo, menu, close,logo_d, nameLogo } from "../assets";
+import { menu, close, nameLogo } from "../assets";
 
 const Navbar = () => {
   const [active, setActive] = useState("");
@@ -12,16 +12,10 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      if (scrollTop > 100) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 100);
     };
 
     window.addEventListener("scroll", handleScroll);
-
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -29,8 +23,8 @@ const Navbar = () => {
     <nav
       className={`${
         styles.paddingX
-      } w-full flex items-center py-5 fixed top-0 z-20 ${
-        scrolled ? "bg-primary" : "bg-transparent"
+      } w-full flex items-center py-5 fixed top-0 z-20 transition-all duration-300 ${
+        scrolled ? "bg-primary shadow-lg" : "bg-transparent"
       }`}
     >
       <div className='w-full flex justify-between items-center max-w-7xl mx-auto'>
@@ -45,29 +39,40 @@ const Navbar = () => {
           <img src={nameLogo} alt='logo' className='w-9 h-9 object-contain rounded-full' />
           <p className='text-white text-[18px] font-bold cursor-pointer flex '>
             Ravi Ranjan Kumar &nbsp;
-            <span className='sm:block hidden'> | Portfolio</span>
+            <span className='sm:block hidden'>| Portfolio</span>
           </p>
         </Link>
 
-        <ul className='list-none hidden sm:flex flex-row gap-10'>
+        <ul className='list-none hidden sm:flex flex-row gap-10 items-center'>
           {navLinks.map((nav) => (
             <li
               key={nav.id}
               className={`${
                 active === nav.title ? "text-white" : "text-secondary"
-              } hover:text-white text-[18px] font-medium cursor-pointer`}
+              } hover:text-white text-[18px] font-medium cursor-pointer transition-colors duration-300`}
               onClick={() => setActive(nav.title)}
             >
               <a href={`#${nav.id}`}>{nav.title}</a>
             </li>
           ))}
+          <li>
+            <a
+              href='/resume.pdf'
+              target='_blank'
+              rel='noopener noreferrer'
+              download='Ravi_Ranjan_Resume.pdf'
+              className='py-2 px-5 rounded-lg bg-[#915EFF] hover:bg-[#7d4edb] text-white text-[15px] font-semibold transition-all duration-300 shadow-md hover:shadow-lg inline-block'
+            >
+              Resume
+            </a>
+          </li>
         </ul>
 
         <div className='sm:hidden flex flex-1 justify-end items-center'>
           <img
             src={toggle ? close : menu}
             alt='menu'
-            className='w-[28px] h-[28px] object-contain'
+            className='w-[28px] h-[28px] object-contain cursor-pointer'
             onClick={() => setToggle(!toggle)}
           />
 
@@ -84,13 +89,24 @@ const Navbar = () => {
                     active === nav.title ? "text-white" : "text-secondary"
                   }`}
                   onClick={() => {
-                    setToggle(!toggle);
+                    setToggle(false);
                     setActive(nav.title);
                   }}
                 >
                   <a href={`#${nav.id}`}>{nav.title}</a>
                 </li>
               ))}
+              <li>
+                <a
+                  href='/resume.pdf'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  download='Ravi_Ranjan_Resume.pdf'
+                  className='py-2 px-5 rounded-lg bg-[#915EFF] hover:bg-[#7d4edb] text-white text-[14px] font-semibold transition-all duration-300 inline-block'
+                >
+                  Resume
+                </a>
+              </li>
             </ul>
           </div>
         </div>

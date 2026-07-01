@@ -3,33 +3,12 @@ import {
   backend,
   creator,
   web,
-  javascript,
-  typescript,
-  html,
-  css,
-  reactjs,
-  redux,
-  tailwind,
-  nodejs,
-  mongodb,
-  git,
-  figma,
-  docker,
-  meta,
-  starbucks,
-  tesla,
-  shopify,
   carrent,
   jobit,
   tripguide,
-  threejs,
-  cpp,
-  python,
   research,
   translate,
   chatbot,
-  nvidia,
-  hackiit,
 } from "../assets";
 
 export const navLinks = [
@@ -66,58 +45,61 @@ const services = [
   },
 ];
 
-const technologies = [
+const skillCategories = [
   {
-    name: "Python",
-    icon: python,
+    title: "Programming Languages",
+    skills: ["Python", "Java", "SQL"],
   },
   {
-    name: "JavaScript",
-    icon: javascript,
+    title: "Frontend",
+    skills: ["React.js", "HTML5", "CSS3", "JavaScript"],
   },
   {
-    name: "React JS",
-    icon: reactjs,
+    title: "Backend",
+    skills: ["FastAPI", "REST APIs", "Streamlit"],
   },
   {
-    name: "Node JS",
-    icon: nodejs,
+    title: "Databases & Cloud",
+    skills: ["MySQL", "PostgreSQL", "Supabase"],
   },
   {
-    name: "MongoDB",
-    icon: mongodb,
+    title: "AI / Machine Learning",
+    skills: [
+      "Machine Learning",
+      "Deep Learning",
+      "LLMs",
+      "LangChain",
+      "LangGraph",
+      "RAG",
+      "Computer Vision",
+      "Prompt Engineering",
+      "Agentic AI",
+    ],
   },
   {
-    name: "git",
-    icon: git,
+    title: "Libraries & Frameworks",
+    skills: [
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "Pandas",
+      "NumPy",
+      "OpenCV",
+      "Matplotlib",
+    ],
   },
   {
-    name: "docker",
-    icon: docker,
+    title: "Tools & Platforms",
+    skills: ["Git", "GitHub", "VS Code", "Postman", "n8n"],
   },
   {
-    name: "HTML 5",
-    icon: html,
-  },
-  {
-    name: "CSS 3",
-    icon: css,
-  },
-  {
-    name: "Tailwind CSS",
-    icon: tailwind,
-  },
-  {
-    name: "TypeScript",
-    icon: typescript,
-  },
-  {
-    name: "Three JS",
-    icon: threejs,
-  },
-  {
-    name: "C++",
-    icon: cpp,
+    title: "Core Computer Science",
+    skills: [
+      "Data Structures & Algorithms",
+      "Object-Oriented Programming (OOP)",
+      "DBMS",
+      "Operating Systems",
+    ],
   },
 ];
 
@@ -205,67 +187,61 @@ const projects = [
     description:
       "AI-powered biometric attendance platform using face recognition. Built teacher and student dashboards with Supabase cloud database and real-time attendance tracking.",
     tags: [
-      {
-        name: "python",
-        color: "blue-text-gradient",
-      },
-      {
-        name: "opencv",
-        color: "green-text-gradient",
-      },
-      {
-        name: "streamlit",
-        color: "pink-text-gradient",
-      },
+      { name: "Python", color: "blue-text-gradient" },
+      { name: "OpenCV", color: "green-text-gradient" },
+      { name: "Streamlit", color: "pink-text-gradient" },
+      { name: "Supabase", color: "orange-text-gradient" },
+    ],
+    features: [
+      "Real-time face recognition attendance",
+      "Teacher & student dashboards",
+      "Cloud-synced database with Supabase",
     ],
     image: carrent,
     linkedin_link: "",
-    github_link: "#",
+    github_link: "https://github.com/raviranjan8521562357-ui",
+    live_demo_link: "",
   },
   {
     name: "AI Resume ATS System",
     description:
       "Full-stack AI Resume ATS with automated resume parsing, candidate ranking, semantic search using FAISS embeddings, and recruiter-friendly candidate intelligence reports.",
     tags: [
-      {
-        name: "fastapi",
-        color: "blue-text-gradient",
-      },
-      {
-        name: "react",
-        color: "green-text-gradient",
-      },
-      {
-        name: "FAISS",
-        color: "pink-text-gradient",
-      },
+      { name: "FastAPI", color: "blue-text-gradient" },
+      { name: "React", color: "green-text-gradient" },
+      { name: "FAISS", color: "pink-text-gradient" },
+      { name: "RAG", color: "orange-text-gradient" },
+    ],
+    features: [
+      "Automated resume parsing & ranking",
+      "Semantic search with FAISS embeddings",
+      "AI-powered candidate intelligence reports",
     ],
     image: jobit,
     linkedin_link: "",
-    github_link: "#",
+    github_link: "https://github.com/raviranjan8521562357-ui",
+    live_demo_link: "",
   },
   {
     name: "ResearchMind – Multi-Agent AI",
     description:
       "Multi-agent AI research assistant with Search, Reader, Writer and Critic agents. Generates structured research reports with real-time execution using LangChain and Mistral AI.",
     tags: [
-      {
-        name: "langchain",
-        color: "blue-text-gradient",
-      },
-      {
-        name: "streamlit",
-        color: "green-text-gradient",
-      },
-      {
-        name: "mistral-ai",
-        color: "pink-text-gradient",
-      },
+      { name: "LangChain", color: "blue-text-gradient" },
+      { name: "Streamlit", color: "green-text-gradient" },
+      { name: "Mistral AI", color: "pink-text-gradient" },
+      { name: "Tavily", color: "orange-text-gradient" },
+    ],
+    features: [
+      "Multi-agent research pipeline",
+      "Structured report generation with citations",
+      "Real-time streaming execution",
     ],
     image: tripguide,
     linkedin_link: "",
-    github_link: "#",
+    github_link: "https://github.com/raviranjan8521562357-ui",
+    live_demo_link: "",
   },
 ];
 
-export { services, technologies, experiences, testimonials, projects };
+export { services, skillCategories, experiences, testimonials, projects };

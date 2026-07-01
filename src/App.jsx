@@ -1,7 +1,10 @@
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter } from "react-router-dom";
 
 import { About, Contact, Experience, Feedbacks, Hero, Navbar, Tech, Works, StarsCanvas } from "./components";
-import Chatbot from "./components/Chatbot";
+import Footer from "./components/Footer";
+
+const Chatbot = lazy(() => import("./components/Chatbot"));
 
 const App = () => {
   return (
@@ -19,7 +22,10 @@ const App = () => {
           <Contact />
           <StarsCanvas />
         </div>
-        <Chatbot />
+        <Footer />
+        <Suspense fallback={null}>
+          <Chatbot />
+        </Suspense>
       </div>
     </BrowserRouter>
   );

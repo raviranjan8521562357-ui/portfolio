@@ -19,8 +19,11 @@ const Hero = () => {
             Hi, I'm <span className="text-[#915EFF]">Ravi Ranjan</span>
           </h1>
           <p className={`${styles.heroSubText} mt-2 text-white-100`}>
-            AI Engineer | ML Engineer <br className="sm:block " />
-            & Full Stack Developer <br className="sm:block hidden" />B.E. CSE @ Chandigarh University
+            AI Engineer | Full Stack Developer <br className="sm:block hidden" />
+            | Generative AI Enthusiast
+          </p>
+          <p className="mt-4 text-secondary text-[16px] sm:text-[18px] max-w-lg leading-[28px]">
+            Building intelligent, scalable applications powered by AI — from concept to deployment.
           </p>
         </div>
       </div>

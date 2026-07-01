@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import Tilt from "react-parallax-tilt";
 import { motion } from "framer-motion";
 
@@ -7,7 +7,7 @@ import { services } from "../constants";
 import { SectionWrapper } from "../hoc";
 import { fadeIn, textVariant } from "../utils/motion";
 
-const ServiceCard = ({ index, title, icon }) => (
+const ServiceCard = memo(({ index, title, icon }) => (
   <Tilt 
     className='xs:w-[250px] w-full'
     tiltMaxAngleX={45}
@@ -24,7 +24,7 @@ const ServiceCard = ({ index, title, icon }) => (
       >
         <img
           src={icon}
-          alt='web-development'
+          alt={title}
           className='w-16 h-16 object-contain'
         />
 
@@ -34,7 +34,9 @@ const ServiceCard = ({ index, title, icon }) => (
       </div>
     </motion.div>
   </Tilt>
-);
+));
+
+ServiceCard.displayName = "ServiceCard";
 
 const About = () => {
   return (
@@ -48,7 +50,7 @@ const About = () => {
         variants={fadeIn("", "", 0.1, 1)}
         className='mt-4 text-secondary text-[17px] max-w-3xl leading-[30px]'
       >
-         I'm a final-year Computer Science student with hands-on experience building 4+ end-to-end AI systems, including a face recognition attendance platform, an LLM-based resume screening tool, a multi-agent research assistant, and a medical image classifier. Skilled in Python, Java, TensorFlow, FastAPI, React, LangChain, RAG, and Computer Vision with a strong focus on building real-world AI applications.
+        I'm an AI Engineer and Full Stack Developer passionate about building intelligent, production-ready applications. I specialize in designing AI-powered systems using <span className='text-white font-medium'>LangGraph</span>, <span className='text-white font-medium'>RAG pipelines</span>, and <span className='text-white font-medium'>autonomous AI agents</span> — while also building scalable web applications with <span className='text-white font-medium'>React</span>, <span className='text-white font-medium'>Node.js</span>, and modern backend architectures. Proficient in <span className='text-white font-medium'>Python</span> and <span className='text-white font-medium'>Java</span>, I bring strong problem-solving skills and a drive to ship end-to-end solutions that make a real impact.
       </motion.p>
 
       <div className='mt-20 flex flex-wrap gap-10'>
