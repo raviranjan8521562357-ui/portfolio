@@ -29,39 +29,63 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
-    emailjs
-      .send(
-        import.meta.env.VITE_APP_EMAILJS_SERVICE_ID,
-        import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID,
-        {
-          from_name: form.name,
-          to_name: "Ravi Ranjan Kumar",
-          from_email: form.email,
-          to_email: "raviranjan.cse2003@gmail.com",
-          message: form.message,
-        },
-        import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY
-      )
-      .then(
-        () => {
-          setLoading(false);
-          alert("Thank you. I will get back to you as soon as possible.");
+    const serviceId = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
 
-          setForm({
-            name: "",
-            email: "",
-            message: "",
-          });
-        },
-        (error) => {
-          setLoading(false);
-          console.error(error);
-
-          alert("Ahh, something went wrong. Please try again.");
-        }
+    if (!serviceId || !templateId || !publicKey) {
+      console.error(
+        "EmailJS environment variables are missing. Please configure VITE_APP_EMAILJS_SERVICE_ID, VITE_APP_EMAILJS_TEMPLATE_ID, and VITE_APP_EMAILJS_PUBLIC_KEY."
       );
+      alert("Oops! The contact form is not configured yet (missing EmailJS settings).");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      emailjs
+        .send(
+          serviceId,
+          templateId,
+          {
+            from_name: form.name,
+            to_name: "Ravi Ranjan Kumar",
+            from_email: form.email,
+            to_email: "raviranjan.cse2003@gmail.com",
+            message: form.message,
+          },
+          publicKey
+        )
+        .then(
+          () => {
+            setLoading(false);
+            alert("Thank you. I will get back to you as soon as possible.");
+
+            setForm({
+              name: "",
+              email: "",
+              message: "",
+            });
+          },
+          (error) => {
+            setLoading(false);
+            console.error("EmailJS error:", error);
+            alert("Ahh, something went wrong. Please try again.");
+          }
+        )
+        .catch((error) => {
+          setLoading(false);
+          console.error("EmailJS promise rejection:", error);
+          alert("Ahh, something went wrong. Please try again.");
+        });
+    } catch (error) {
+      setLoading(false);
+      console.error("EmailJS sync throw:", error);
+      alert("Ahh, something went wrong. Please try again.");
+    }
   };
 
   return (
