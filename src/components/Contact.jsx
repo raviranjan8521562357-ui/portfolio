@@ -33,6 +33,76 @@ const LoadingSpinner = () => (
   </svg>
 );
 
+/**
+ * Sanitize environment variable values by trimming whitespace
+ * and stripping accidental surrounding quotes.
+ */
+const sanitize = (val) => {
+  if (typeof val !== "string") return val;
+  let clean = val.trim();
+  if (
+    (clean.startsWith('"') && clean.endsWith('"')) ||
+    (clean.startsWith("'") && clean.endsWith("'"))
+  ) {
+    clean = clean.substring(1, clean.length - 1);
+  }
+  return clean.trim();
+};
+
+/**
+ * Get sanitized EmailJS keys from environment variables.
+ * Supports both VITE_EMAILJS_* and VITE_APP_EMAILJS_* prefixes.
+ */
+const getEmailJSKeys = () => {
+  const v1_service = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const v1_template = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const v1_public = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  const v2_service = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID;
+  const v2_template = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
+  const v2_public = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
+
+  return {
+    serviceId: sanitize(v2_service || v1_service),
+    templateId: sanitize(v2_template || v1_template),
+    publicKey: sanitize(v2_public || v1_public),
+  };
+};
+
+/**
+ * Direct fetch fallback — bypasses the SDK entirely and calls
+ * the EmailJS REST API using the browser fetch() API.
+ */
+const sendEmailDirectFetch = async (serviceId, templateId, publicKey, templateParams) => {
+  const payload = {
+    service_id: serviceId,
+    template_id: templateId,
+    user_id: publicKey,
+    template_params: templateParams,
+  };
+
+  console.log("📡 [Fallback] Sending via direct fetch to EmailJS API...");
+
+  const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const text = await response.text();
+
+  if (response.ok) {
+    return { status: response.status, text };
+  }
+
+  const error = new Error(`EmailJS direct fetch failed: ${response.status} ${text}`);
+  error.status = response.status;
+  error.text = text;
+  throw error;
+};
+
 const Contact = () => {
   const formRef = useRef();
   const [form, setForm] = useState({
@@ -45,39 +115,6 @@ const Contact = () => {
   const [errors, setErrors] = useState({});
   const [statusMessage, setStatusMessage] = useState(null);
 
-  const getEmailJSKeys = useCallback(() => {
-    const sanitize = (val) => {
-      if (typeof val !== 'string') return val;
-      let clean = val.trim();
-      if ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
-        clean = clean.substring(1, clean.length - 1);
-      }
-      return clean.trim();
-    };
-
-    const v1_service = import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const v1_template = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const v1_public = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-
-    const v2_service = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID;
-    const v2_template = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
-    const v2_public = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
-
-    return {
-      serviceId: sanitize(v2_service || v1_service),
-      templateId: sanitize(v2_template || v1_template),
-      publicKey: sanitize(v2_public || v1_public),
-      raw: {
-        v1_service,
-        v1_template,
-        v1_public,
-        v2_service,
-        v2_template,
-        v2_public,
-      }
-    };
-  }, []);
-
   useEffect(() => {
     if (statusMessage) {
       const timer = setTimeout(() => setStatusMessage(null), 5000);
@@ -85,16 +122,14 @@ const Contact = () => {
     }
   }, [statusMessage]);
 
+  // Initialize EmailJS SDK on mount
   useEffect(() => {
-    const { serviceId, templateId, publicKey, raw } = getEmailJSKeys();
+    const { serviceId, templateId, publicKey } = getEmailJSKeys();
 
     console.log("EmailJS Environment Variable Configuration:");
-    console.log("VITE_EMAILJS_SERVICE_ID exists:", !!raw.v1_service);
-    console.log("VITE_EMAILJS_TEMPLATE_ID exists:", !!raw.v1_template);
-    console.log("VITE_EMAILJS_PUBLIC_KEY exists:", !!raw.v1_public);
-    console.log("VITE_APP_EMAILJS_SERVICE_ID exists:", !!raw.v2_service);
-    console.log("VITE_APP_EMAILJS_TEMPLATE_ID exists:", !!raw.v2_template);
-    console.log("VITE_APP_EMAILJS_PUBLIC_KEY exists:", !!raw.v2_public);
+    console.log("SERVICE_ID exists:", !!serviceId, "| length:", serviceId?.length);
+    console.log("TEMPLATE_ID exists:", !!templateId, "| length:", templateId?.length);
+    console.log("PUBLIC_KEY exists:", !!publicKey, "| length:", publicKey?.length);
 
     const missing = [];
     if (!serviceId) missing.push("SERVICE_ID");
@@ -110,13 +145,16 @@ const Contact = () => {
     } else {
       console.log("✅ EmailJS configuration loaded successfully.");
       try {
-        emailjs.init(publicKey);
-        console.log("🔑 EmailJS SDK initialized successfully with public key.");
+        // v4 SDK uses object-based init
+        emailjs.init({
+          publicKey: publicKey,
+        });
+        console.log("🔑 EmailJS SDK v4 initialized successfully.");
       } catch (err) {
         console.error("❌ Failed to initialize EmailJS SDK:", err);
       }
     }
-  }, [getEmailJSKeys]);
+  }, []);
 
   const validate = useCallback(() => {
     const newErrors = {};
@@ -139,7 +177,7 @@ const Contact = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
     if (!validate()) return;
@@ -149,34 +187,10 @@ const Contact = () => {
 
     const { serviceId, templateId, publicKey } = getEmailJSKeys();
 
-    console.log("EmailJS Submission Config Check:");
-    console.log("SERVICE_ID exists:", !!serviceId);
-    console.log("TEMPLATE_ID exists:", !!templateId);
-    console.log("PUBLIC_KEY exists:", !!publicKey);
-
-    // Detailed safe inspection of keys (verifying types, quotes, spaces, etc.)
-    console.log("--- EmailJS Environment Variables Properties ---");
-    const logKeyInfo = (name, value) => {
-      if (value === undefined) {
-        console.log(`${name}: undefined (type: undefined)`);
-      } else if (value === null) {
-        console.log(`${name}: null (type: object)`);
-      } else {
-        console.log(`${name}:`);
-        console.log(`  - Type: ${typeof value}`);
-        console.log(`  - Length: ${value.length}`);
-        console.log(`  - Is literal "undefined": ${value === "undefined"}`);
-        console.log(`  - Is literal "null": ${value === "null"}`);
-        console.log(`  - Has quotes: ${(/^["'].*["']$/).test(value)}`);
-        console.log(`  - Has leading/trailing spaces: ${value !== value.trim()}`);
-        console.log(`  - First 3 chars: ${JSON.stringify(value.substring(0, 3))}`);
-        console.log(`  - Last 3 chars: ${JSON.stringify(value.substring(value.length - 3))}`);
-      }
-    };
-    logKeyInfo("SERVICE_ID", serviceId);
-    logKeyInfo("TEMPLATE_ID", templateId);
-    logKeyInfo("PUBLIC_KEY", publicKey);
-    console.log("-------------------------------------------------");
+    console.log("📧 EmailJS Submission Config Check:");
+    console.log("  SERVICE_ID:", serviceId ? `${serviceId.substring(0, 8)}...` : "MISSING");
+    console.log("  TEMPLATE_ID:", templateId ? `${templateId.substring(0, 9)}...` : "MISSING");
+    console.log("  PUBLIC_KEY:", publicKey ? `${publicKey.substring(0, 5)}...` : "MISSING");
 
     if (!serviceId || !templateId || !publicKey) {
       const missing = [];
@@ -184,7 +198,7 @@ const Contact = () => {
       if (!templateId) missing.push("TEMPLATE_ID");
       if (!publicKey) missing.push("PUBLIC_KEY");
 
-      console.error("❌ EmailJS submission failed due to missing configuration:", missing.join(", "));
+      console.error("❌ EmailJS submission failed — missing:", missing.join(", "));
       setStatusMessage({
         type: "error",
         text: "❌ Contact form is not configured. Please try again later.",
@@ -193,48 +207,70 @@ const Contact = () => {
       return;
     }
 
-    emailjs
-      .send(
+    const templateParams = {
+      from_name: form.name,
+      to_name: "Ravi Ranjan Kumar",
+      from_email: form.email,
+      to_email: "raviranjan.cse2003@gmail.com",
+      message: form.message,
+    };
+
+    try {
+      // Attempt 1: Use the EmailJS SDK (v4 — object-based options)
+      console.log("📡 [SDK] Attempting to send via EmailJS SDK v4...");
+      const response = await emailjs.send(
         serviceId,
         templateId,
+        templateParams,
         {
-          from_name: form.name,
-          to_name: "Ravi Ranjan Kumar",
-          from_email: form.email,
-          to_email: "raviranjan.cse2003@gmail.com",
-          message: form.message,
-        },
-        publicKey
-      )
-      .then(
-        (response) => {
-          setLoading(false);
-          setStatusMessage({
-            type: "success",
-            text: "✅ Thanks for reaching out! Your message has been sent successfully. I'll get back to you as soon as possible.",
-          });
-          setForm({ name: "", email: "", message: "" });
-        },
-        (error) => {
-          setLoading(false);
-          console.error("❌ EmailJS Send Failed Details:");
-          console.error("1. Full Error Object:", error);
-          console.error("2. Status Code:", error?.status || (error && typeof error === 'object' && 'status' in error ? error.status : "N/A"));
-          console.error("3. Text Response / Error Body:", error?.text || (error && typeof error === 'object' && 'text' in error ? error.text : "N/A"));
-          console.error("4. Message:", error?.message || (typeof error === 'string' ? error : "N/A"));
-          console.error("5. Response:", error?.response || "N/A");
-          console.error("6. Stack Trace:", error?.stack || "N/A");
-          console.error("7. Config used at call time:", {
-            serviceIdLength: serviceId?.length,
-            templateIdLength: templateId?.length,
-            publicKeyLength: publicKey?.length,
-          });
-          setStatusMessage({
-            type: "error",
-            text: "❌ Something went wrong. Please try again later.",
-          });
+          publicKey: publicKey,
         }
       );
+
+      console.log("✅ [SDK] Email sent successfully:", response.status, response.text);
+      setLoading(false);
+      setStatusMessage({
+        type: "success",
+        text: "✅ Thanks for reaching out! Your message has been sent successfully. I'll get back to you as soon as possible.",
+      });
+      setForm({ name: "", email: "", message: "" });
+    } catch (sdkError) {
+      console.error("❌ [SDK] EmailJS SDK send failed:");
+      console.error("  Status:", sdkError?.status);
+      console.error("  Text:", sdkError?.text);
+      console.error("  Message:", sdkError?.message);
+      console.error("  Full error:", sdkError);
+
+      // Attempt 2: Direct fetch fallback
+      try {
+        console.log("🔄 [Fallback] SDK failed, trying direct fetch...");
+        const fallbackResponse = await sendEmailDirectFetch(
+          serviceId,
+          templateId,
+          publicKey,
+          templateParams
+        );
+
+        console.log("✅ [Fallback] Email sent successfully:", fallbackResponse.status, fallbackResponse.text);
+        setLoading(false);
+        setStatusMessage({
+          type: "success",
+          text: "✅ Thanks for reaching out! Your message has been sent successfully. I'll get back to you as soon as possible.",
+        });
+        setForm({ name: "", email: "", message: "" });
+      } catch (fetchError) {
+        console.error("❌ [Fallback] Direct fetch also failed:");
+        console.error("  Status:", fetchError?.status);
+        console.error("  Text:", fetchError?.text);
+        console.error("  Message:", fetchError?.message);
+        console.error("  Full error:", fetchError);
+        setLoading(false);
+        setStatusMessage({
+          type: "error",
+          text: "❌ Something went wrong. Please try again later.",
+        });
+      }
+    }
   };
 
   return (
