@@ -52,6 +52,43 @@ const Contact = () => {
     }
   }, [statusMessage]);
 
+  useEffect(() => {
+    const v1_service = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const v1_template = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const v1_public = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    const v2_service = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID;
+    const v2_template = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
+    const v2_public = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
+
+    console.log("EmailJS Environment Variable Configuration:");
+    console.log("VITE_EMAILJS_SERVICE_ID exists:", !!v1_service);
+    console.log("VITE_EMAILJS_TEMPLATE_ID exists:", !!v1_template);
+    console.log("VITE_EMAILJS_PUBLIC_KEY exists:", !!v1_public);
+    console.log("VITE_APP_EMAILJS_SERVICE_ID exists:", !!v2_service);
+    console.log("VITE_APP_EMAILJS_TEMPLATE_ID exists:", !!v2_template);
+    console.log("VITE_APP_EMAILJS_PUBLIC_KEY exists:", !!v2_public);
+
+    const activeService = v2_service || v1_service;
+    const activeTemplate = v2_template || v1_template;
+    const activePublic = v2_public || v1_public;
+
+    const missing = [];
+    if (!activeService) missing.push("SERVICE_ID");
+    if (!activeTemplate) missing.push("TEMPLATE_ID");
+    if (!activePublic) missing.push("PUBLIC_KEY");
+
+    if (missing.length > 0) {
+      console.warn(
+        `⚠️ EmailJS configuration is incomplete. Missing: ${missing.join(
+          ", "
+        )}. Please configure them as VITE_EMAILJS_* or VITE_APP_EMAILJS_* environment variables.`
+      );
+    } else {
+      console.log("✅ EmailJS configuration loaded successfully.");
+    }
+  }, []);
+
   const validate = useCallback(() => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = "Name is required.";
@@ -81,11 +118,22 @@ const Contact = () => {
     setLoading(true);
     setStatusMessage(null);
 
-    const serviceId = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
+    const serviceId = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID || import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID || import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY || import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    console.log("EmailJS Submission Config Check:");
+    console.log("SERVICE_ID exists:", !!serviceId);
+    console.log("TEMPLATE_ID exists:", !!templateId);
+    console.log("PUBLIC_KEY exists:", !!publicKey);
 
     if (!serviceId || !templateId || !publicKey) {
+      const missing = [];
+      if (!serviceId) missing.push("SERVICE_ID");
+      if (!templateId) missing.push("TEMPLATE_ID");
+      if (!publicKey) missing.push("PUBLIC_KEY");
+
+      console.error("❌ EmailJS submission failed due to missing configuration:", missing.join(", "));
       setStatusMessage({
         type: "error",
         text: "❌ Contact form is not configured. Please try again later.",
@@ -108,7 +156,7 @@ const Contact = () => {
         publicKey
       )
       .then(
-        () => {
+        (response) => {
           setLoading(false);
           setStatusMessage({
             type: "success",
@@ -116,8 +164,18 @@ const Contact = () => {
           });
           setForm({ name: "", email: "", message: "" });
         },
-        () => {
+        (error) => {
           setLoading(false);
+          console.error("❌ EmailJS send failed:", {
+            error: error,
+            status: error?.status || "N/A",
+            text: error?.text || "N/A",
+            config: {
+              serviceIdExists: !!serviceId,
+              templateIdExists: !!templateId,
+              publicKeyExists: !!publicKey,
+            }
+          });
           setStatusMessage({
             type: "error",
             text: "❌ Something went wrong. Please try again later.",
