@@ -45,14 +45,16 @@ const Contact = () => {
   const [errors, setErrors] = useState({});
   const [statusMessage, setStatusMessage] = useState(null);
 
-  useEffect(() => {
-    if (statusMessage) {
-      const timer = setTimeout(() => setStatusMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [statusMessage]);
+  const getEmailJSKeys = useCallback(() => {
+    const sanitize = (val) => {
+      if (typeof val !== 'string') return val;
+      let clean = val.trim();
+      if ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
+        clean = clean.substring(1, clean.length - 1);
+      }
+      return clean.trim();
+    };
 
-  useEffect(() => {
     const v1_service = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const v1_template = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
     const v1_public = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
@@ -61,22 +63,43 @@ const Contact = () => {
     const v2_template = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID;
     const v2_public = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY;
 
-    console.log("EmailJS Environment Variable Configuration:");
-    console.log("VITE_EMAILJS_SERVICE_ID exists:", !!v1_service);
-    console.log("VITE_EMAILJS_TEMPLATE_ID exists:", !!v1_template);
-    console.log("VITE_EMAILJS_PUBLIC_KEY exists:", !!v1_public);
-    console.log("VITE_APP_EMAILJS_SERVICE_ID exists:", !!v2_service);
-    console.log("VITE_APP_EMAILJS_TEMPLATE_ID exists:", !!v2_template);
-    console.log("VITE_APP_EMAILJS_PUBLIC_KEY exists:", !!v2_public);
+    return {
+      serviceId: sanitize(v2_service || v1_service),
+      templateId: sanitize(v2_template || v1_template),
+      publicKey: sanitize(v2_public || v1_public),
+      raw: {
+        v1_service,
+        v1_template,
+        v1_public,
+        v2_service,
+        v2_template,
+        v2_public,
+      }
+    };
+  }, []);
 
-    const activeService = v2_service || v1_service;
-    const activeTemplate = v2_template || v1_template;
-    const activePublic = v2_public || v1_public;
+  useEffect(() => {
+    if (statusMessage) {
+      const timer = setTimeout(() => setStatusMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage]);
+
+  useEffect(() => {
+    const { serviceId, templateId, publicKey, raw } = getEmailJSKeys();
+
+    console.log("EmailJS Environment Variable Configuration:");
+    console.log("VITE_EMAILJS_SERVICE_ID exists:", !!raw.v1_service);
+    console.log("VITE_EMAILJS_TEMPLATE_ID exists:", !!raw.v1_template);
+    console.log("VITE_EMAILJS_PUBLIC_KEY exists:", !!raw.v1_public);
+    console.log("VITE_APP_EMAILJS_SERVICE_ID exists:", !!raw.v2_service);
+    console.log("VITE_APP_EMAILJS_TEMPLATE_ID exists:", !!raw.v2_template);
+    console.log("VITE_APP_EMAILJS_PUBLIC_KEY exists:", !!raw.v2_public);
 
     const missing = [];
-    if (!activeService) missing.push("SERVICE_ID");
-    if (!activeTemplate) missing.push("TEMPLATE_ID");
-    if (!activePublic) missing.push("PUBLIC_KEY");
+    if (!serviceId) missing.push("SERVICE_ID");
+    if (!templateId) missing.push("TEMPLATE_ID");
+    if (!publicKey) missing.push("PUBLIC_KEY");
 
     if (missing.length > 0) {
       console.warn(
@@ -86,8 +109,14 @@ const Contact = () => {
       );
     } else {
       console.log("✅ EmailJS configuration loaded successfully.");
+      try {
+        emailjs.init(publicKey);
+        console.log("🔑 EmailJS SDK initialized successfully with public key.");
+      } catch (err) {
+        console.error("❌ Failed to initialize EmailJS SDK:", err);
+      }
     }
-  }, []);
+  }, [getEmailJSKeys]);
 
   const validate = useCallback(() => {
     const newErrors = {};
@@ -118,14 +147,36 @@ const Contact = () => {
     setLoading(true);
     setStatusMessage(null);
 
-    const serviceId = import.meta.env.VITE_APP_EMAILJS_SERVICE_ID || import.meta.env.VITE_EMAILJS_SERVICE_ID;
-    const templateId = import.meta.env.VITE_APP_EMAILJS_TEMPLATE_ID || import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
-    const publicKey = import.meta.env.VITE_APP_EMAILJS_PUBLIC_KEY || import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+    const { serviceId, templateId, publicKey } = getEmailJSKeys();
 
     console.log("EmailJS Submission Config Check:");
     console.log("SERVICE_ID exists:", !!serviceId);
     console.log("TEMPLATE_ID exists:", !!templateId);
     console.log("PUBLIC_KEY exists:", !!publicKey);
+
+    // Detailed safe inspection of keys (verifying types, quotes, spaces, etc.)
+    console.log("--- EmailJS Environment Variables Properties ---");
+    const logKeyInfo = (name, value) => {
+      if (value === undefined) {
+        console.log(`${name}: undefined (type: undefined)`);
+      } else if (value === null) {
+        console.log(`${name}: null (type: object)`);
+      } else {
+        console.log(`${name}:`);
+        console.log(`  - Type: ${typeof value}`);
+        console.log(`  - Length: ${value.length}`);
+        console.log(`  - Is literal "undefined": ${value === "undefined"}`);
+        console.log(`  - Is literal "null": ${value === "null"}`);
+        console.log(`  - Has quotes: ${(/^["'].*["']$/).test(value)}`);
+        console.log(`  - Has leading/trailing spaces: ${value !== value.trim()}`);
+        console.log(`  - First 3 chars: ${JSON.stringify(value.substring(0, 3))}`);
+        console.log(`  - Last 3 chars: ${JSON.stringify(value.substring(value.length - 3))}`);
+      }
+    };
+    logKeyInfo("SERVICE_ID", serviceId);
+    logKeyInfo("TEMPLATE_ID", templateId);
+    logKeyInfo("PUBLIC_KEY", publicKey);
+    console.log("-------------------------------------------------");
 
     if (!serviceId || !templateId || !publicKey) {
       const missing = [];
@@ -166,15 +217,17 @@ const Contact = () => {
         },
         (error) => {
           setLoading(false);
-          console.error("❌ EmailJS send failed:", {
-            error: error,
-            status: error?.status || "N/A",
-            text: error?.text || "N/A",
-            config: {
-              serviceIdExists: !!serviceId,
-              templateIdExists: !!templateId,
-              publicKeyExists: !!publicKey,
-            }
+          console.error("❌ EmailJS Send Failed Details:");
+          console.error("1. Full Error Object:", error);
+          console.error("2. Status Code:", error?.status || (error && typeof error === 'object' && 'status' in error ? error.status : "N/A"));
+          console.error("3. Text Response / Error Body:", error?.text || (error && typeof error === 'object' && 'text' in error ? error.text : "N/A"));
+          console.error("4. Message:", error?.message || (typeof error === 'string' ? error : "N/A"));
+          console.error("5. Response:", error?.response || "N/A");
+          console.error("6. Stack Trace:", error?.stack || "N/A");
+          console.error("7. Config used at call time:", {
+            serviceIdLength: serviceId?.length,
+            templateIdLength: templateId?.length,
+            publicKeyLength: publicKey?.length,
           });
           setStatusMessage({
             type: "error",
